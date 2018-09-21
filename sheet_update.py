@@ -1,39 +1,44 @@
-import urllib.request
-import json
+import requests
 import csv
 
 def main():
-	f = open("aat_spreadsheet_test.csv", "r")
+	f = open("aat_update.csv", "r")
 	r = csv.reader(f)
 
 	next(r) #Skip header
 
+	id_list = [] #create a list of AAT ID
+
+	all_the_terms = []
+
 	for row in r:
 		aat_id = row[1]
-		urlData = "http://aat-web-services-staging.getty.edu/aat/" + aat_id + ".json"
 
-		try:
-			webUrl = urllib.request.urlopen(urlData)
-		except: 
-			print ("URL is not found", aat_id)
-			continue
+		# Condition to check whether id has already existed
+		# If not, add id to the id_list and run the rest
+		if aat_id not in id_list:
+			id_list.append(aat_id)  
+			url = "http://aat-web-services-staging.getty.edu/aat/" + aat_id + ".json"
 
-		data = webUrl.read()
+			try:
+				webUrl = requests.get(url, timeout=0.2)
 
-		theJSON = json.loads(data)
-		thisDict = theJSON["identified_by"]
+			except: 
+				print ("URL is not found:", aat_id)
+				continue
 
-		termSet = set()
-		for i in thisDict:
-			termSet.add(i["value"])
+			data = webUrl.json()
+			
+			termSet = set()
+			for i in data["identified_by"]:
+				termSet.add(i["value"])
 
-		all_the_terms = []
-		for x in termSet:
-			theList = (aat_id,x)
-			all_the_terms.append(theList)
-			# yield (theList)
+			
+			for x in termSet:
+				theList = (x,aat_id)
+				all_the_terms.append(theList)
 
-		return all_the_terms
+	return all_the_terms
 		
 
 termList = main()
